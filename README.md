@@ -2,11 +2,10 @@
 
 ```sh
 # сгенерировать ключи
-openssl req -newkey rsa:2048 -new -nodes -keyout key.pem -out csr.pem
-openssl x509 -req -days 365 -in csr.pem -signkey key.pem -out server.crt
-# максимально -days 24855 (68лет)
+cd ./custom/keys
+openssl genrsa -out private.pem 2048
+openssl req -x509 -new -nodes -days 3650 -key private.pem -out server.crt
 
-# вывести ключи на экран
-awk -v ORS='\\n' '1' key.pem
+# вывести публичный ключ на экран, требуется в переменной HASURA_GRAPHQL_JWT_SECRET
 awk -v ORS='\\n' '1' server.crt
 ```
