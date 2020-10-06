@@ -1,0 +1,14 @@
+functions:
+  isAuthenticated: "return !!request.auth"
+  validToken: "return request.query.token === resource.Metadata.token"
+  isOwner: "return !!request.auth && userId === request.auth['user-id']"
+  isUser: "return !!request.auth && request.auth['allowed-roles'].includes('user')"
+  isOperator: "return !!request.auth && request.auth['allowed-roles'].includes('operator')"
+  isAdmin: "return !!request.auth && request.auth['allowed-roles'].includes('admin')"
+paths:
+  /users/:userId/:
+    list: "isOwner(userId) && isUser() || isAdmin()"
+  /users/:userId/:fileId:
+    # read: 'isOwner(userId) && isUser() || isAdmin() || isOperator()'
+    read: "true"
+    write: "isOwner(userId) && isUser() || isAdmin()"

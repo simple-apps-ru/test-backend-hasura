@@ -1,0 +1,98 @@
+version: "3.6"
+services:
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: .env
+    container_name: TAMPLATE_NAME-api
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      # - ./data/logs:/logs
+      - ./serviceAccount.json:/serviceAccount.json:ro
+      - ./custom:/app/custom:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.TAMPLATE_NAME-api.entrypoints=http"
+      - "traefik.http.routers.TAMPLATE_NAME-api.rule=Host(`api.DOMAIN_NAME`)"
+      - "traefik.http.middlewares.TAMPLATE_NAME-api-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.TAMPLATE_NAME-api.middlewares=TAMPLATE_NAME-api-https-redirect"
+      - "traefik.http.routers.TAMPLATE_NAME-api-secure.entrypoints=https"
+      - "traefik.http.routers.TAMPLATE_NAME-api-secure.rule=Host(`api.DOMAIN_NAME`)"
+      - "traefik.http.routers.TAMPLATE_NAME-api-secure.tls=true"
+      - "traefik.http.routers.TAMPLATE_NAME-api-secure.tls.certresolver=http"
+      - "traefik.http.routers.TAMPLATE_NAME-api-secure.service=TAMPLATE_NAME-api"
+      - "traefik.http.services.TAMPLATE_NAME-api.loadbalancer.server.port=3000"
+    networks:
+      - net
+
+  graphql:
+    image: hasura/graphql-engine:v1.3.2
+    restart: unless-stopped
+    env_file: .env
+    container_name: TAMPLATE_NAME-graphql
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./hasura/migrations:/hasura-migrations:ro
+      - ./hasura/metadata:/hasura-metadata:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.TAMPLATE_NAME-graphql.entrypoints=http"
+      - "traefik.http.routers.TAMPLATE_NAME-graphql.rule=Host(`graphql.DOMAIN_NAME`)"
+      - "traefik.http.middlewares.TAMPLATE_NAME-graphql-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.TAMPLATE_NAME-graphql.middlewares=TAMPLATE_NAME-graphql-https-redirect"
+      - "traefik.http.routers.TAMPLATE_NAME-graphql-secure.entrypoints=https"
+      - "traefik.http.routers.TAMPLATE_NAME-graphql-secure.rule=Host(`graphql.DOMAIN_NAME`)"
+      - "traefik.http.routers.TAMPLATE_NAME-graphql-secure.tls=true"
+      - "traefik.http.routers.TAMPLATE_NAME-graphql-secure.tls.certresolver=http"
+      - "traefik.http.routers.TAMPLATE_NAME-graphql-secure.service=TAMPLATE_NAME-graphql"
+      - "traefik.http.services.TAMPLATE_NAME-graphql.loadbalancer.server.port=8080"
+    networks:
+      - net
+
+  storage:
+    image: minio/minio
+    restart: unless-stopped
+    container_name: TAMPLATE_NAME-storage
+    environment:
+      S3_BUCKET: bucket
+      MINIO_ACCESS_KEY: C5TFMFX3yKqrNc8p
+      MINIO_SECRET_KEY: FnhCSKPX5x35HMJQ
+    entrypoint: sh
+    command: "-c '/usr/bin/minio server /data'"
+    volumes:
+      - ./data/storage:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.storage.entrypoints=http"
+      - "traefik.http.routers.storage.rule=Host(`storage.DOMAIN_NAME`)"
+      - "traefik.http.middlewares.storage-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.storage.middlewares=storage-https-redirect"
+      - "traefik.http.routers.storage-secure.entrypoints=https"
+      - "traefik.http.routers.storage-secure.rule=Host(`storage.DOMAIN_NAME`)"
+      - "traefik.http.routers.storage-secure.tls=true"
+      - "traefik.http.routers.storage-secure.tls.certresolver=http"
+      - "traefik.http.routers.storage-secure.service=storage"
+      - "traefik.http.services.storage.loadbalancer.server.port=9000"
+    networks:
+      - net
+
+  # logrotate:
+  #   image: blacklabelops/logrotate
+  #   container_name: TAMPLATE_NAME-logrotate
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   environment:
+  #     LOGS_DIRECTORIES: /logs
+  #     LOGROTATE_OLDDIR: /logs/old
+  #     LOGROTATE_LOGFILE: /logs/logrotatecron.log
+  #     LOGROTATE_COMPRESSION: compress
+  #     LOGROTATE_INTERVAL: daily
+  #     LOGROTATE_CRONSCHEDULE: 0 * * * * *
+
+  #   volumes:
+  #     - ./data/logs:/logs
+  #     - ./data/logs/old:/logs/old
+
+networks:
+  net:
+    external: true

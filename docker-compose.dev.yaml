@@ -1,0 +1,51 @@
+version: "3.6"
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    env_file: ".env"
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+      - ./serviceAccount.json:/serviceAccount.json:ro
+      - ./custom:/app/custom:ro
+    ports:
+      - "3000:3000"
+
+  graphql:
+    image: hasura/graphql-engine:v1.3.2
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    env_file: .env
+
+  storage:
+    image: minio/minio
+    restart: unless-stopped
+    environment:
+      S3_BUCKET: zevs
+      MINIO_ACCESS_KEY: MINIO_ACCESS_KEY
+      MINIO_SECRET_KEY: MINIO_SECRET_KEY
+    entrypoint: sh
+    command: "-c '/usr/bin/minio server /data'"
+    volumes:
+      - ./data/storage:/data
+    ports:
+      - "9000:9000"
+
+  postgres:
+    build:
+      dockerfile: ./docker/Dockerfile.postgres
+      context: ./
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./docker/posgresql.conf:/var/lib/postgresql/data/postgresql.conf:ro
+    environment:
+      PG_DATA: /var/lib/postgresql/data/db
+    ports:
+      - "55432:5432"

@@ -1,0 +1,43 @@
+version: "3.6"
+services:
+  adminer:
+    image: adminer:standalone
+    restart: unless-stopped
+    env_file: .env
+    container_name: TAMPLATE_NAME-adminer
+    environment:
+      ADMINER_DESIGN: pokorny
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.TAMPLATE_NAME-adminer.entrypoints=http"
+      - "traefik.http.routers.TAMPLATE_NAME-adminer.rule=Host(`adminer.DOMAIN_NAME`)"
+      - "traefik.http.middlewares.TAMPLATE_NAME-adminer-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.TAMPLATE_NAME-adminer.middlewares=TAMPLATE_NAME-adminer-https-redirect"
+      - "traefik.http.routers.TAMPLATE_NAME-adminer-secure.entrypoints=https"
+      - "traefik.http.routers.TAMPLATE_NAME-adminer-secure.rule=Host(`adminer.DOMAIN_NAME`)"
+      - "traefik.http.routers.TAMPLATE_NAME-adminer-secure.tls=true"
+      - "traefik.http.routers.TAMPLATE_NAME-adminer-secure.tls.certresolver=http"
+      - "traefik.http.routers.TAMPLATE_NAME-adminer-secure.service=TAMPLATE_NAME-adminer"
+      - "traefik.http.services.TAMPLATE_NAME-adminer.loadbalancer.server.port=8080"
+    networks:
+      - net
+
+  postgres:
+    build:
+      dockerfile: ./docker/Dockerfile.postgres
+      context: ./
+    restart: unless-stopped
+    container_name: TAMPLATE_NAME-postgres
+    env_file: .env
+    environment:
+      PG_DATA: /var/lib/postgresql/data/db
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./docker/posgresql.conf:/var/lib/postgresql/data/postgresql.conf
+    networks:
+      - net
+
+networks:
+  net:
+    external: true
