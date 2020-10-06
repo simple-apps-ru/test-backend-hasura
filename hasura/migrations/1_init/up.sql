@@ -1,18 +1,18 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE SCHEMA IF NOT EXISTS auth;
--- CREATE OR REPLACE FUNCTION public.set_current_timestamp_updated_at() RETURNS trigger
---     LANGUAGE plpgsql
---     AS $$
--- declare
---   _new record;
--- begin
---   _new := new;
---   _new. "updated_at" = now();
---   return _new;
--- end;
--- $$;
+CREATE SCHEMA auth;
+CREATE OR REPLACE FUNCTION public.set_current_timestamp_updated_at() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+declare
+  _new record;
+begin
+  _new := new;
+  _new. "updated_at" = now();
+  return _new;
+end;
+$$;
 CREATE TABLE auth.account_providers (
     id uuid DEFAULT public.gen_random_uuid() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -29,10 +29,10 @@ CREATE TABLE auth.account_roles (
 );
 CREATE TABLE auth.accounts (
     id uuid DEFAULT public.gen_random_uuid() NOT NULL,
-    firebase_uid text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     user_id uuid NOT NULL,
+    firebase_uid text,
     active boolean DEFAULT false NOT NULL,
     email public.citext,
     new_email public.citext,
@@ -41,6 +41,7 @@ CREATE TABLE auth.accounts (
     is_anonymous boolean DEFAULT false NOT NULL,
     custom_register_data jsonb,
     otp_secret text,
+    firebase_uid text,
     mfa_enabled boolean DEFAULT false NOT NULL,
     ticket uuid DEFAULT public.gen_random_uuid() NOT NULL,
     ticket_expires_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -59,17 +60,13 @@ CREATE TABLE auth.refresh_tokens (
 CREATE TABLE auth.roles (
     role text NOT NULL
 );
--- CREATE TABLE public.user (
---     id uuid DEFAULT public.gen_random_uuid() NOT NULL,
---     created_at timestamp with time zone DEFAULT now() NOT NULL,
---     updated_at timestamp with time zone DEFAULT now() NOT NULL,
---     display_name text,
---     avatar_url text
--- );
-
-ALTER TABLE public.user ADD COLUMN display_name text DEFAULT '';
-ALTER TABLE public.user ADD COLUMN avatar_url text DEFAULT '';
-
+CREATE TABLE public.users (
+    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    display_name text,
+    avatar_url text
+);
 ALTER TABLE ONLY auth.account_providers
     ADD CONSTRAINT account_providers_account_id_auth_provider_key UNIQUE (account_id, auth_provider);
 ALTER TABLE ONLY auth.account_providers
@@ -94,11 +91,11 @@ ALTER TABLE ONLY auth.roles
     ADD CONSTRAINT roles_pkey PRIMARY KEY (role);
 ALTER TABLE ONLY auth.account_roles
     ADD CONSTRAINT user_roles_account_id_role_key UNIQUE (account_id, role);
--- ALTER TABLE ONLY public.user
---     ADD CONSTRAINT user_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 CREATE TRIGGER set_auth_account_providers_updated_at BEFORE UPDATE ON auth.account_providers FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp_updated_at();
 CREATE TRIGGER set_auth_accounts_updated_at BEFORE UPDATE ON auth.accounts FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp_updated_at();
-CREATE TRIGGER set_public_user_updated_at BEFORE UPDATE ON public.user FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp_updated_at();
+CREATE TRIGGER set_public_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp_updated_at();
 ALTER TABLE ONLY auth.account_providers
     ADD CONSTRAINT account_providers_account_id_fkey FOREIGN KEY (account_id) REFERENCES auth.accounts(id) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE ONLY auth.account_providers
@@ -110,7 +107,7 @@ ALTER TABLE ONLY auth.account_roles
 ALTER TABLE ONLY auth.accounts
     ADD CONSTRAINT accounts_default_role_fkey FOREIGN KEY (default_role) REFERENCES auth.roles(role) ON UPDATE CASCADE ON DELETE RESTRICT;
 ALTER TABLE ONLY auth.accounts
-    ADD CONSTRAINT accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user(id) ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE ONLY auth.refresh_tokens
     ADD CONSTRAINT refresh_tokens_account_id_fkey FOREIGN KEY (account_id) REFERENCES auth.accounts(id) ON UPDATE CASCADE ON DELETE CASCADE;
 

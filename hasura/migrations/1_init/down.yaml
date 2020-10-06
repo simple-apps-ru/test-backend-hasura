@@ -79,6 +79,6 @@
 - args:
     relationship: account
     table:
-      name: user
+      name: users
       schema: public
   type: drop_relationship

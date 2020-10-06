@@ -157,7 +157,7 @@
 - args:
     name: account
     table:
-      name: user
+      name: users
       schema: public
     using:
       manual_configuration:
