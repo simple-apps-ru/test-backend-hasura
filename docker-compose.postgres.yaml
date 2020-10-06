@@ -30,7 +30,7 @@ services:
     container_name: TAMPLATE_NAME-postgres
     env_file: .env
     environment:
-      PG_DATA: /var/lib/postgresql/data/db
+      PGDATA: /var/lib/postgresql/data/db
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./data/postgres:/var/lib/postgresql/data
