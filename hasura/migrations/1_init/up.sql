@@ -41,6 +41,7 @@ CREATE TABLE auth.accounts (
     is_anonymous boolean DEFAULT false NOT NULL,
     custom_register_data jsonb,
     otp_secret text,
+    phone_number text,
     mfa_enabled boolean DEFAULT false NOT NULL,
     ticket uuid DEFAULT public.gen_random_uuid() NOT NULL,
     ticket_expires_at timestamp with time zone DEFAULT now() NOT NULL,
