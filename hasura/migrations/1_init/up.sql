@@ -65,6 +65,7 @@ CREATE TABLE public.users (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     display_name text,
+    phone_number text,
     avatar_url text
 );
 ALTER TABLE ONLY auth.account_providers
